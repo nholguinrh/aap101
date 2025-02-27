@@ -1,0 +1,89 @@
+---
+- name: Create VMs and configure them
+  hosts: localhost
+  become: false
+  gather_facts: false
+  collections:
+    - community.vmware
+
+  pre_tasks:
+    - name: Load variables
+      include_vars: variables.yaml
+
+  tasks:
+    - name: Create VMs
+      community.vmware.vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs | bool }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster }}"
+        folder: "{{ vcenter_vm_folder }}"
+        name: "{{ item }}"
+        guest_id: "rhel9_64Guest"
+        state: poweredon
+        hardware:
+          memory_mb: 2048
+          num_cpus: 1
+          scsi: paravirtual
+        disk:
+          - size_gb: 16
+            type: thin
+            datastore: "{{ vcenter_datastore }}"
+        networks:
+          - name: "{{ vcenter_network }}"
+            device_type: vmxnet3
+            connected: true
+        wait_for_ip_address: true
+      loop:
+        - frontend
+        - middleware
+        - backend
+      register: vm_info
+      delegate_to: localhost
+
+    - name: Wait for SSH to be available
+      ansible.builtin.wait_for:
+        host: "{{ item.instance.ipv4 }}"
+        port: 22
+        delay: 30
+        timeout: 300
+        state: started
+      loop: "{{ vm_info.results }}"
+    
+    - name: Add user 'app' with sudo privileges
+      ansible.builtin.user:
+        name: app
+        password: "{{ 'mypassword' | password_hash('sha512') }}"
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+      become: true
+      delegate_to: "{{ item.instance.ipv4 }}"
+      loop: "{{ vm_info.results }}"
+
+    - name: Allow 'app' user to use sudo without password
+      ansible.builtin.copy:
+        dest: "/etc/sudoers.d/app"
+        content: "app ALL=(ALL) NOPASSWD: ALL"
+        mode: "0440"
+      become: true
+      delegate_to: "{{ item.instance.ipv4 }}"
+      loop: "{{ vm_info.results }}"
+
+    - name: Install VMware Tools
+      ansible.builtin.yum:
+        name: open-vm-tools
+        state: present
+      become: true
+      delegate_to: "{{ item.instance.ipv4 }}"
+      loop: "{{ vm_info.results }}"
+
+    - name: Update all packages
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+      become: true
+      delegate_to: "{{ item.instance.ipv4 }}"
+      loop: "{{ vm_info.results }}"
