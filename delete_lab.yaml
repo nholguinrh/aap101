@@ -1,0 +1,45 @@
+---
+- name: Delete VMs from vSphere
+  hosts: localhost
+  become: false
+  gather_facts: false
+  collections:
+    - community.vmware
+
+  pre_tasks:
+    - name: Load variables
+      include_vars: variables.yaml
+
+  tasks:
+    - name: Power off VMs if running
+      community.vmware.vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs | bool }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder: "{{ vcenter_vm_folder }}"
+        name: "{{ item }}"
+        state: poweredoff
+      loop:
+        - frontend
+        - middleware
+        - backend
+      ignore_errors: true
+      delegate_to: localhost
+
+    - name: Delete VMs
+      community.vmware.vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs | bool }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder: "{{ vcenter_vm_folder }}"
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - frontend
+        - middleware
+        - backend
+      delegate_to: localhost
