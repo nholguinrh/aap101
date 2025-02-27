@@ -6,16 +6,9 @@
   collections:
     - community.vmware
 
-  vars:
-    vcenter_hostname: "your-vcenter-hostname"
-    vcenter_username: "your-username"
-    vcenter_password: "your-password"
-    vcenter_datacenter: "your-datacenter"
-    vcenter_cluster: "Cluster-1"
-    vcenter_folder: "sandbox-xnbhd"
-    vcenter_datastore: "workload_share_dwPsq"
-    vcenter_network: "segment-sandbox-xnbhd (vcsnsx-vcs-shared-private)"
-    validate_certs: false
+  pre_tasks:
+    - name: Load variables
+      include_vars: variables.yaml
 
   tasks:
     - name: Create VM
@@ -23,10 +16,10 @@
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
-        validate_certs: "{{ validate_certs }}"
+        validate_certs: "{{ vcenter_validate_certs | bool }}"
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ vcenter_cluster }}"
-        folder: "{{ vcenter_folder }}"
+        folder: "{{ vcenter_vm_folder }}"
         name: "reli"
         guest_id: "rhel9_64Guest"
         state: poweredon
