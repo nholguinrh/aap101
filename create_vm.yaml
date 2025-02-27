@@ -21,17 +21,18 @@
         cluster: "{{ vcenter_cluster }}"
         name: "rhelai"
         template: "rhel86-tpl"
-        folder: "sandbox-xnbhd"
+        folder: "{{ vcenter_vm_folder }}"
         state: poweredon
         hardware:
           memory_mb: 4096
           num_cpus: 2
-          disk:
-            - size_gb: 20
-              type: thin
-          network:
-            - name: "{{ vcenter_network }}"
-              connected: true
+        disk:
+          - size_gb: 20
+            type: thin
+            datastore: "{{ vcenter_datastore }}"
+        networks:
+          - name: "{{ vcenter_network }}"
+            connected: true
         customization:
           hostname: "rhelai"
           domain: "example.com"
