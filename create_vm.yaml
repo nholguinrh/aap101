@@ -33,7 +33,7 @@
             datastore: "{{ vcenter_datastore }}"
         networks:
           - name: "{{ vcenter_network }}"
-            type: vmxnet3
+            device_type: vmxnet3
             connected: true
         wait_for_ip_address: false
       delegate_to: localhost
