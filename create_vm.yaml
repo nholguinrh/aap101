@@ -21,7 +21,7 @@
         cluster: "{{ vcenter_cluster }}"
         name: "rhelai"
         template: "rhel86-tpl"
-        folder: ""
+        folder: "{{ vcenter_vm_folder }}"
         state: poweredon
         hardware:
           memory_mb: 4096
