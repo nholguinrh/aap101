@@ -1,0 +1,31 @@
+---
+- name: Create VM in vSphere from template
+  hosts: localhost
+  become: false
+  gather_facts: false
+  collections:
+    - community.vmware
+
+  pre_tasks:
+    - name: Load variables
+      include_vars: variables.yaml
+
+  tasks:
+    - name: Clone VM from template
+      community.vmware.vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs | bool }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster }}"
+        folder: "{{ vcenter_vm_folder }}"
+        name: "reli"
+        template: "rhel86-tpl"
+        state: poweredon
+        networks:
+          - name: "{{ vcenter_network }}"
+            device_type: vmxnet3
+            connected: true
+        wait_for_ip_address: false
+      delegate_to: localhost
